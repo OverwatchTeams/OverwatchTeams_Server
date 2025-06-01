@@ -26,13 +26,15 @@ exports.handler = async (event) => {
         { player: p._id },
         {
           $set: {
-            isClanMember: false,
             'dates.first': p.first,
             'dates.last': p.last,
+          },
+          $setOnInsert: {
+            isClanMember: false,
             'scores.D': 0,
             'scores.T': 0,
             'scores.H': 0,
-          }
+          },
         },
         { upsert: true, new: true }
       );
