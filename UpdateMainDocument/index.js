@@ -13,12 +13,22 @@ exports.handler = async (event) => {
     const gameDatas = await aggregateGameDatas(Match);
 
     // 2. 리더보드 집계
-    const leaderBoard = await aggregateLeaderBoardDatas(Match, gameDatas);
+    const { byYear, byMonth } = await aggregateLeaderBoardDatas(Match, gameDatas);
 
-    // 3. Main 문서 upsert (없으면 생성, 있으면 갱신)
+    // 3. 최신 Match의 날짜 가져오기
+    const latestMatch = await Match.findOne().sort({ date: -1 }).select('date');
+    const updateDate = latestMatch?.date || new Date(); // 최신 날짜가 없으면 현재 날짜 사용
+
+
+    const leaderBoard = {
+      byYear,
+      byMonth
+    };
+
+    // 4. Main 문서 upsert (없으면 생성, 있으면 갱신)
     const mainDoc = await Main.findOneAndUpdate(
       {},
-      { gameDatas, leaderBoard },
+      { updateDate, gameDatas, leaderBoard}, // updateDate 추가
       { new: true, upsert: true }
     );
 

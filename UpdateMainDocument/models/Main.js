@@ -5,6 +5,7 @@ const totalWinRateSchema = new mongoose.Schema({
   ranking: { type: Number, default: 0 },    // 순위
   winRate: { type: Number, default: 0 },     // 승률
   wins: { type: Number, default: 0 },        // 승리횟수
+  draws: { type: Number, default: 0 },        // 무승부횟수
   losses: { type: Number, default: 0 },      // 패배횟수
   isMinRequired: { type: Boolean, default: false }// 최소 경기수 충족 여부(추가)
 }, { _id: false });
@@ -13,6 +14,7 @@ const totalWinRateSchema = new mongoose.Schema({
 const simpleWinRateSchema = new mongoose.Schema({
   winRate: { type: Number, default: 0 },     // 승률
   wins: { type: Number, default: 0 },        // 승리횟수
+  draws: { type: Number, default: 0 },        // 무승부횟수
   losses: { type: Number, default: 0 },      // 패배횟수
 }, { _id: false });
 
@@ -35,24 +37,33 @@ const winRateRoleMapSchema = new mongoose.Schema({
 
 // 승률 전체 구조
 const winRateSchema = new mongoose.Schema({
-  total: { type: totalWinRateSchema, default: () => ({}) }, // 플레이어별
-  role: { type: winRateRoleSchema, default: () => ({}) }, // 역할별
+  total: { type: Map, of: totalWinRateSchema, default: {} }, // 플레이어별
+  role: {
+    D: { type: Map, of: simpleWinRateSchema, default: {} },
+    T: { type: Map, of: simpleWinRateSchema, default: {} },
+    H: { type: Map, of: simpleWinRateSchema, default: {} }
+  },
   map: { type: winRateMapSchema, default: () => ({}) }, // 맵별
   roleMap: { type: winRateRoleMapSchema, default: () => ({}) } // 역할-맵별
 }, { _id: false });
 
 // 출석 상세 구조
 const attendanceDetailSchema = new mongoose.Schema({
-  ranking: { type: Number, default: 0 },    // 순위
-  playedGames: { type: Number, default: 0 }, // 참여 경기 수
-  totalGames: { type: Number, default: 0 }, // 전체 경기 수
-  isMinRequired: { type: Boolean, default: false } // 최소 경기수 충족 여부
+  ranking: { type: Number, default: 0 },
+  playedGames: { type: Number, default: 0 },
+  totalGames: { type: Number, default: 0 },
+  isMinRequired: { type: Boolean, default: false }
+}, { _id: false });
+
+const attendanceSchema = new mongoose.Schema({
+  total: { type: Map, of: attendanceDetailSchema, default: {} },
+  map: { type: Map, of: new mongoose.Schema({}, { _id: false, strict: false }), default: {} },
 }, { _id: false });
 
 // 리더보드 구조
 const leaderBoardSchema = new mongoose.Schema({
   winRate: { type: winRateSchema, default: () => ({}) },
-  attendance: { type: attendanceDetailSchema, default: () => ({}) }
+  attendance: { type: attendanceSchema, default: () => ({}) }
 }, { _id: false });
 
 // 게임 데이터 구조

@@ -1,76 +1,88 @@
 const mongoose = require('mongoose');
 
-const winRateDetailSchema = new mongoose.Schema({
-  ranking: Number,
-    winRate: Number,
-  wins: Number,
-  losses: Number
+// 승률 상세 구조
+const totalWinRateSchema = new mongoose.Schema({
+  ranking: { type: Number, default: 0 },    // 순위
+  winRate: { type: Number, default: 0 },     // 승률
+  wins: { type: Number, default: 0 },        // 승리횟수
+  draws: { type: Number, default: 0 },        // 무승부횟수
+  losses: { type: Number, default: 0 },      // 패배횟수
+  isMinRequired: { type: Boolean, default: false }// 최소 경기수 충족 여부(추가)
 }, { _id: false });
 
+// 승률 상세 구조
+const simpleWinRateSchema = new mongoose.Schema({
+  winRate: { type: Number, default: 0 },     // 승률
+  wins: { type: Number, default: 0 },        // 승리횟수
+  draws: { type: Number, default: 0 },        // 무승부횟수
+  losses: { type: Number, default: 0 },      // 패배횟수
+}, { _id: false });
+
+// 역할별 구조 (D, T, H)
+const winRateRoleSchema = new mongoose.Schema({
+  D: { type: simpleWinRateSchema, default: () => ({}) },
+  T: { type: simpleWinRateSchema, default: () => ({}) },
+  H: { type: simpleWinRateSchema, default: () => ({}) }
+}, { _id: false });
+
+// 맵별 구조 (맵 이름이 key)
+const winRateMapSchema = new mongoose.Schema({}, { _id: false, strict: false });
+
+// 역할-맵별 구조 (맵 이름이 key, value는 역할별 구조)
+const winRateRoleMapSchema = new mongoose.Schema({
+  D: { type: winRateMapSchema, default: () => ({}) },
+  T: { type: winRateMapSchema, default: () => ({}) },
+  H: { type: winRateMapSchema, default: () => ({}) }
+}, { _id: false });
+
+// 승률 전체 구조
+const winRateSchema = new mongoose.Schema({
+  total: { type: Map, of: totalWinRateSchema, default: {} }, // 플레이어별
+  role: {
+    D: { type: Map, of: simpleWinRateSchema, default: {} },
+    T: { type: Map, of: simpleWinRateSchema, default: {} },
+    H: { type: Map, of: simpleWinRateSchema, default: {} }
+  },
+  map: { type: winRateMapSchema, default: () => ({}) }, // 맵별
+  roleMap: { type: winRateRoleMapSchema, default: () => ({}) } // 역할-맵별
+}, { _id: false });
+
+// 출석 상세 구조
 const attendanceDetailSchema = new mongoose.Schema({
-  ranking: Number,
-  playedGames: Number,
-  totalGames: Number,
-  minRequiredGames: Number,
-  minRequired: Boolean
+  ranking: { type: Number, default: 0 },
+  playedGames: { type: Number, default: 0 },
+  totalGames: { type: Number, default: 0 },
+  isMinRequired: { type: Boolean, default: false }
 }, { _id: false });
 
-// <플레이어이름,winRateDetail> 
-const winRateRoleSchema = {
-  D: { type: Map, of: winRateDetailSchema },
-  T: { type: Map, of: winRateDetailSchema },
-  H: { type: Map, of: winRateDetailSchema }
-};
+const attendanceSchema = new mongoose.Schema({
+  total: { type: Map, of: attendanceDetailSchema, default: {} },
+  map: { type: Map, of: new mongoose.Schema({}, { _id: false, strict: false }), default: {} },
+}, { _id: false });
 
+// 리더보드 구조
+const leaderBoardSchema = new mongoose.Schema({
+  winRate: { type: winRateSchema, default: () => ({}) },
+  attendance: { type: attendanceSchema, default: () => ({}) }
+}, { _id: false });
 
-// <맵이름, winRateMap>
-const winRateRoleMapSchema ={
-    D: { type: Map, of: winRateMapSchema },
-    T: { type: Map, of: winRateMapSchema },
-    H: { type: Map, of: winRateMapSchema }
-};
+// 게임 데이터 구조
+const gameDatasSchema = new mongoose.Schema({
+  totalGames: Number,
+  map: { type: winRateMapSchema, default: () => ({}) },
+  minRequiredRound: Number
+}, { _id: false });
 
-// <플레이어이름,winRateDetail> 
-const winRateMapSchema ={
-    type: Map,
-    of: winRateDetailSchema
-}
-
-const winRateSchema = {
-  // <플레이어이름,winRateDetail> 
-  total: { type: Map, of: winRateDetailSchema },
-  // <역할,winRateRole> 
-  role: {type: Map, of: winRateRoleSchema},
-  // <맵이름, winRateMap>
-  map: { type: Map, of: winRateMapSchema},
-  // <맵이름, winRateRoleMap>
-  roleMap: {type: Map, of: winRateRoleMapSchema},
-};
-
-const leaderBoardSchema = {
-  winRate: winRateSchema,
-  attendance: { type: Map, of: attendanceDetailSchema }
-};
-
+// Main 스키마
 const mainSchema = new mongoose.Schema({
-  updateDate: { type: Date, default: Date.now },
+  updateDate: { type: Date },
   leaderBoard: {
-    byYear: leaderBoardSchema,
-    byMonth: leaderBoardSchema
+    byYear: { type: Map, of: leaderBoardSchema, default: {} },
+    byMonth: { type: Map, of: leaderBoardSchema, default: {} }
   },
   gameDatas: {
-    map: {
-      year: { type: Map, of: Number },
-      month: { type: Map, of: Number }
-    },
-    round: {
-      year: Number,
-      month: Number
-    },
-    minRequiredRound: {
-      year: Number,
-      month: Number
-    }
+    byYear: { type: Map, of: gameDatasSchema, default: {} },
+    byMonth: { type: Map, of: gameDatasSchema, default: {} }
   }
 });
 
