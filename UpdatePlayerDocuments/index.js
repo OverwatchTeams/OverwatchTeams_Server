@@ -22,14 +22,26 @@ exports.handler = async (event) => {
       }
     ]);
 
+    // 2.2 각 player별로 가장 최신 Match의 round 조회
+    const lastRounds = await Match.aggregate([
+      {
+        $group: {
+          _id: "$player",
+          lastRound: { $max: "$round" }
+        }
+      }
+    ]);
+
     // 5. Player 컬렉션에 upsert
     for (const p of players) {
+      const lastRound = lastRounds.find(lr => lr._id === p._id)?.lastRound || 0; // Default to 0 if no match found
       await Player.findOneAndUpdate(
         { player: p._id },
         {
           $set: {
             'dates.first': p.first,
             'dates.last': p.last,
+            'dates.LastRound': lastRound, // Set the latest round
           },
           $setOnInsert: {
             isClanMember: false,
