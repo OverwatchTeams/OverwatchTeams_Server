@@ -25,11 +25,15 @@ exports.handler = async (event) => {
   }
 
   try {
-    const insertedPlayer = new Player(player);
-    await insertedPlayer.save();
+    const updatedPlayer = await Player.findOneAndUpdate(
+      { player: player.player }, // 조건: player 필드가 동일한 경우
+      player, // 업데이트할 데이터
+      { new: true, upsert: true, runValidators: true } // 옵션: 없으면 생성, 유효성 검사 실행
+    );
+
     return {
-      statusCode: 201,
-      body: JSON.stringify({ message: 'Player saved successfully', playerId: insertedPlayer._id }),
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Player updated successfully', playerId: updatedPlayer._id }),
     };
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -40,7 +44,7 @@ exports.handler = async (event) => {
     }
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Failed to save Player', error: err.message }),
+      body: JSON.stringify({ message: 'Failed to update Player', error: err.message }),
     };
   }
 };
