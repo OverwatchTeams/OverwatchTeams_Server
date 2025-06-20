@@ -61,6 +61,7 @@ const playerSchema = new mongoose.Schema({
     T: { type: Number, default: 0 },
     H: { type: Number, default: 0 }
   },
+  subNames: { type: [String], default: [] },
   winRates: {
     byYear: { type: Map, of: winRateByPeriodSchema, default: {} },
     byMonth: { type: Map, of: winRateByPeriodSchema, default: {} }

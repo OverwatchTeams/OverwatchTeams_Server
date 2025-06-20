@@ -8,40 +8,57 @@ const { aggregateSynergy } = require('./utils/synergyUtils');
 exports.handler = async (event) => {
   await connectToDatabase();
   try {
-    // 1. 전체 기간의 player 목록 중복 없이 수집
-    const uniquePlayers = await Match.distinct('player');
-
     // 2.1 각 player별로 첫/마지막 참가 날짜 조회
     const players = await Match.aggregate([
       {
         $group: {
-          _id: "$player",
+          _id: "$player", // 그룹화 기준 필드
           first: { $min: "$date" },
-          last: { $max: "$date" }
-        }
-      }
-    ]);
-
-    // 2.2 각 player별로 가장 최신 Match의 round 조회
-    const lastRounds = await Match.aggregate([
-      {
-        $group: {
-          _id: "$player",
+          last: { $max: "$date" },
           lastRound: { $max: "$round" }
         }
       }
     ]);
 
+    let allPlayers = await Player.find({});
+    let playerMap = new Map(allPlayers.flatMap(p => [[p.player, p], ...p.subNames.map(sub => [sub, p])]));
+
     // 5. Player 컬렉션에 upsert
     for (const p of players) {
-      const lastRound = lastRounds.find(lr => lr._id === p._id)?.lastRound || 0; // Default to 0 if no match found
+      let id;
+      let last;
+      let first;
+      let lastRound;
+      let myself = playerMap.get(p._id);
+      if(!myself)
+      {
+        id = p._id;
+        first = p.first;
+        last = p.last;
+        lastRound = p.lastRound;
+      } 
+      else
+      {
+        id = myself.player;
+        myself.dates.first = myself.dates.first === null || p.first < myself.dates.first ? p.first : myself.dates.first;
+        first = myself.dates.first;
+        myself.dates.last = myself.dates.last === null || p.last > myself.dates.last ? p.last : myself.dates.last;
+        last = myself.dates.last;
+        myself.dates.lastRound = myself.dates.lastRound === null || p.lastRound > myself.dates.lastRound ? p.lastRound : myself.dates.lastRound;
+        lastRound = myself.dates.lastRound;
+        console.log('id', id, 'first', '0: ', first, '1: ', p.first, '2: ', myself.dates.first);
+        console.log('id', id, 'last', '0: ', last, '1: ', p.last, '2: ', myself.dates.last);
+        console.log('id', id, 'lastRound', '0: ', lastRound, '1: ', p.lastRound, '2: ', myself.dates.lastRound);
+      }
+
+    
       await Player.findOneAndUpdate(
-        { player: p._id },
+        { player: id },
         {
           $set: {
-            'dates.first': p.first,
-            'dates.last': p.last,
-            'dates.LastRound': lastRound, // Set the latest round
+            'dates.first': first,
+            'dates.last': last, 
+            'dates.lastRound': lastRound, 
           },
           $setOnInsert: {
             isClanMember: false,
@@ -52,6 +69,11 @@ exports.handler = async (event) => {
         },
         { upsert: true, new: true }
       );
+      if(!myself)
+      {
+        allPlayers = await Player.find({});
+        playerMap = new Map(allPlayers.flatMap(p => [[p.player, p], ...p.subNames.map(sub => [sub, p])]));
+      }
     }
 
     await aggregateWinRate(Match, Player);
