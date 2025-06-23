@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const connectToDatabase = require('./db');
 const Main = require('./models/Main');
 const Match = require('./models/Match');
+const Player = require('./models/Player');
 const { aggregateGameDatas } = require('./utils/gameDataUtil');
 const { aggregateLeaderBoardDatas } = require('./utils/leaderBoardUtil');
 
@@ -13,7 +14,7 @@ exports.handler = async (event) => {
     const gameDatas = await aggregateGameDatas(Match);
 
     // 2. 리더보드 집계
-    const { byYear, byMonth } = await aggregateLeaderBoardDatas(Match, gameDatas);
+    const { byYear, byMonth } = await aggregateLeaderBoardDatas(Match, gameDatas, Player);
 
     // 3. 최신 Match의 날짜 가져오기
     const latestMatch = await Match.findOne().sort({ date: -1 }).select('date');

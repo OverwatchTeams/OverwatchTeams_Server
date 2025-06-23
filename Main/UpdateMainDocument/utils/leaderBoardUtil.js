@@ -1,5 +1,5 @@
 // LeaderBoard 집계 함수
-async function aggregateLeaderBoardDatas(Match, gameDatas) {
+async function aggregateLeaderBoardDatas(Match, gameDatas, Player) {
   // 집계
   const agg = await Match.aggregate([
     {
@@ -11,10 +11,13 @@ async function aggregateLeaderBoardDatas(Match, gameDatas) {
         role: 1,
         win: { $cond: [{ $eq: ["$winlose", "승"] }, 1, 0] },
         loss: { $cond: [{ $eq: ["$winlose", "패"] }, 1, 0] },
-        draw: { $cond: [{ $eq: ["$winlose", "무"] }, 1, 0] } // 무승부 추가
+        draw: { $cond: [{ $eq: ["$winlose", "무"] }, 1, 0] }
       }
     }
   ]);
+
+  const allPlayers = await Player.find({});
+  const playerMap = new Map(allPlayers.flatMap(p => [[p.player, p], ...p.subNames.map(sub => [sub, p])]));
 
   // 연도별 리더보드
   const byYear = {};
@@ -24,7 +27,7 @@ async function aggregateLeaderBoardDatas(Match, gameDatas) {
   for (const row of agg) {
     // 연도별
     const year = String(row.year);
-    const player = String(row.player);
+    const player = String(playerMap.get(row.player)?.player || row.player);
     const map = row.map;
     const role = row.role;
     const month = String(row.month);

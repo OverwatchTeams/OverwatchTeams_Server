@@ -8,11 +8,11 @@ const { aggregateSynergy } = require('./utils/synergyUtils');
 exports.handler = async (event) => {
   await connectToDatabase();
   try {
-    // 2.1 각 player별로 첫/마지막 참가 날짜 조회
+    // 1 각 player별로 첫/마지막 참가 날짜 조회
     const players = await Match.aggregate([
       {
         $group: {
-          _id: "$player", // 그룹화 기준 필드
+          _id: "$player",
           first: { $min: "$date" },
           last: { $max: "$date" },
           lastRound: { $max: "$round" }
@@ -20,10 +20,11 @@ exports.handler = async (event) => {
       }
     ]);
 
+    await Player.updateMany({}, { $unset: { dates: {} } });
     let allPlayers = await Player.find({});
     let playerMap = new Map(allPlayers.flatMap(p => [[p.player, p], ...p.subNames.map(sub => [sub, p])]));
 
-    // 5. Player 컬렉션에 upsert
+    // 2. Player 컬렉션에 upsert
     for (const p of players) {
       let id;
       let last;
@@ -46,9 +47,6 @@ exports.handler = async (event) => {
         last = myself.dates.last;
         myself.dates.lastRound = myself.dates.lastRound === null || p.lastRound > myself.dates.lastRound ? p.lastRound : myself.dates.lastRound;
         lastRound = myself.dates.lastRound;
-        console.log('id', id, 'first', '0: ', first, '1: ', p.first, '2: ', myself.dates.first);
-        console.log('id', id, 'last', '0: ', last, '1: ', p.last, '2: ', myself.dates.last);
-        console.log('id', id, 'lastRound', '0: ', lastRound, '1: ', p.lastRound, '2: ', myself.dates.lastRound);
       }
 
     
