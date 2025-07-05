@@ -65,11 +65,10 @@ async function aggregateGameDatas(Match) {
       $project: {
         totalGames: 1,
         map: { $arrayToObject: "$map" },
-        minRequiredRound: {
-          $cond: [
-            { $gt: ["$totalGames", 100] },
-            30,
-            24
+        minRequiredRound: { 
+          $min: [
+            { $ceil: { $multiply: ["$totalGames", 0.25] } },
+            30
           ]
         }
       }

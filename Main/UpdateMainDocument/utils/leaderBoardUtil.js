@@ -122,7 +122,13 @@ async function aggregateLeaderBoardDatas(Match, gameDatas, Player) {
       // 랭킹 계산
       const ranked = totalArr
         .filter(([_, d]) => d.isMinRequired)
-        .sort((a, b) => b[1].winRate - a[1].winRate);
+        .sort((a, b) => {
+          // 승률이 같으면 승수로 비교
+          if (b[1].winRate === a[1].winRate) {
+            return b[1].wins - a[1].wins;
+          }
+          return b[1].winRate - a[1].winRate;
+        });
       ranked.forEach(([player, _], idx) => {
         target[k].winRate.total[player].ranking = idx + 1;
       });
