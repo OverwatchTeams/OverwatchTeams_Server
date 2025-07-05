@@ -78,13 +78,12 @@ const mainSchema = new mongoose.Schema({
   updateDate: { type: Date },
   leaderBoard: {
     byYear: { type: Map, of: leaderBoardSchema, default: {} },
-    byMonth: { type: Map, of: leaderBoardSchema, default: {} },
-    byDay: { type: Map, of: leaderBoardSchema, default: {} }
+    byMonth: { type: Map, of: leaderBoardSchema, default: {} }
   },
   gameDatas: {
     byYear: { type: Map, of: gameDatasSchema, default: {} },
     byMonth: { type: Map, of: gameDatasSchema, default: {} },
-    byDay: { type: Map, of: leaderBoardSchema, default: {} }
+    byDay: { type: Map, of: gameDatasSchema, default: {} }
   }
 });
 

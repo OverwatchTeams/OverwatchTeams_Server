@@ -7,7 +7,7 @@ exports.handler = async (event) => {
   try {
     const category = event.queryStringParameters?.category;
     const date = event.queryStringParameters?.date;
-  
+
     if (!date) {
       return {
         statusCode: 400,
@@ -23,13 +23,13 @@ exports.handler = async (event) => {
     }
 
     // category 값에 따라 leaderBoard 속성 결정
-    let gameDatasPath;
+    let leaderBoardPath;
     if (category === 'year') {
-      gameDatasPath = 'gameDatas.byYear';
+      leaderBoardPath = 'leaderBoard.byYear';
     } else if (category === 'month') {
-      gameDatasPath = 'gameDatas.byMonth';
+      leaderBoardPath = 'leaderBoard.byMonth';
     } else if (category === 'day') {
-      gameDatasPath = 'gameDatas.byDay';
+      leaderBoardPath = 'leaderBoard.byDay';
     } else {
       return {
         statusCode: 400,
@@ -38,11 +38,11 @@ exports.handler = async (event) => {
     }
 
     const result = await Main.findOne(
-      { [`${gameDatasPath}.${date}`]: { $exists: true } },
-      { [`${gameDatasPath}.${date}`]: 1, _id: 0 }
+      { [`${leaderBoardPath}.${date}`]: { $exists: true } },
+      { [`${leaderBoardPath}.${date}`]: 1, _id: 0 }
     );
 
-    if (!result || !result.gameDatas) {
+    if (!result || !result.leaderBoard) {
       return {
         statusCode: 404,
         body: JSON.stringify({ message: `No data found for ${category} ${date}` }),
@@ -50,32 +50,32 @@ exports.handler = async (event) => {
     }
 
     // category에 따라 적절한 leaderBoard 데이터 선택
-    let gameData;
+    let leaderBoardData;
     if (category === 'year') {
-      gameData = result.gameDatas.byYear;
+      leaderBoardData = result.leaderBoard.byYear;
     } else if (category === 'month') {
-      gameData = result.gameDatas.byMonth;
+      leaderBoardData = result.leaderBoard.byMonth;
     } else if (category === 'day') {
-      gameData = result.gameDatas.byDay;
+      leaderBoardData = result.leaderBoard.byDay;
+    }
+
+    if (!leaderBoardData) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ message: `No ${category} data found` }),
+      };
     }
 
     // Map 타입 처리
     const dateData =
-      gameData instanceof Map
-        ? gameData.get(date)
-        : gameData[date];
+      leaderBoardData instanceof Map
+        ? leaderBoardData.get(date)
+        : leaderBoardData[date];
 
     if (!dateData) {
       return {
         statusCode: 404,
         body: JSON.stringify({ message: `No data found for ${category} ${date}` }),
-      };
-    }
-
-    if (!gameData) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: `No ${category} data found` }),
       };
     }
 
@@ -87,7 +87,7 @@ exports.handler = async (event) => {
     console.error('Error:', err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Failed to get GameDatas', error: err.message }),
+      body: JSON.stringify({ message: 'Failed to get LeaderBoard', error: err.message }),
     };
   }
 };
