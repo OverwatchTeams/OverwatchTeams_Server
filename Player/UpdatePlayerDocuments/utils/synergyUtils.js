@@ -52,6 +52,7 @@ async function aggregateSynergy(Match, Player) {
                     for (const you of oppTeam) {
                         if (!clanPlayerSet.has(you.player)) continue;
                         let yourself = playerMap.get(you.player);
+                        if (myself === yourself) continue;
                         const rolePair = `${me.role}-${you.role}`;
                         synergyStats[myself.player] ??= {};
                         synergyStats[myself.player][yourself.player] ??= {};
@@ -77,7 +78,7 @@ async function aggregateSynergy(Match, Player) {
                             wins: sameTeam.wins
                         };
                     }
-                    else if(oppositeTeam.games >= 1) {
+                    if (oppositeTeam.games >= 1) {
                         synergyObj[rolePair].oppositeTeam = {
                             games: oppositeTeam.games,
                             wins: oppositeTeam.wins

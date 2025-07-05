@@ -27,8 +27,8 @@ const winRateByPeriodSchema = new mongoose.Schema({
 }, { _id: false });
 
 const synergyDetailSchema = new mongoose.Schema({
-  games: { type: Number, default: 0 },      // 경기 수
-  wins: { type: Number, default: 0 }       // 경기에서 이긴 횟수
+  games: { type: Number, default: 0 },      // 같이 뛴 경기 수
+  score: { type: Number, default: 0 }       // 시너지 점수
 }, { _id: false });
 
 const synergyRolePairSchema = new mongoose.Schema({
@@ -54,8 +54,7 @@ const playerSchema = new mongoose.Schema({
   isClanMember: { type: Boolean, default: true },
   dates: {
     first: { type: Date, default: null },
-    last: { type: Date, default: null },
-    lastRound: { type: Number, default: null }
+    last: { type: Date, default: null }
   },
   scores: {
     D: { type: Number, default: 0 },

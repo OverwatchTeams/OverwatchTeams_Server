@@ -45,7 +45,7 @@ exports.handler = async (event) => {
         first = myself.dates.first;
         myself.dates.last = myself.dates.last === null || p.last > myself.dates.last ? p.last : myself.dates.last;
         last = myself.dates.last;
-        myself.dates.lastRound = myself.dates.lastRound === null || p.lastRound > myself.dates.lastRound ? p.lastRound : myself.dates.lastRound;
+        myself.dates.lastRound = p.lastRound !== null && (myself.dates.lastRound === null || p.lastRound > myself.dates.lastRound) ? p.lastRound : myself.dates.lastRound;
         lastRound = myself.dates.lastRound;
       }
 
@@ -60,9 +60,9 @@ exports.handler = async (event) => {
           },
           $setOnInsert: {
             isClanMember: false,
-            'scores.D': 0,
-            'scores.T': 0,
-            'scores.H': 0,
+            'scores.D': 0.00,
+            'scores.T': 0.00,
+            'scores.H': 0.00,
           },
         },
         { upsert: true, new: true }

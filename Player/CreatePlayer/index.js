@@ -14,7 +14,7 @@ exports.handler = async (event) => {
     };
   }
 
-  const requiredFields = ['player', 'scores'];
+  const requiredFields = ['player'];
   for (const field of requiredFields) {
     if (player[field] === undefined || player[field] === null) {
       return {
@@ -24,12 +24,20 @@ exports.handler = async (event) => {
     }
   }
 
+  // null이 아닌 값만 추출
+  const updateFields = {};
+  for (const key in player) {
+    if (player[key] !== null && player[key] !== undefined) {
+      updateFields[key] = player[key];
+    }
+  }
+
   try {
     // 플레이어 업데이트
     const updatedPlayer = await Player.findOneAndUpdate(
       { player: player.player }, // 조건: player 필드가 동일한 경우
-      player, // 업데이트할 데이터
-      { new: true, upsert: true, runValidators: true } // 옵션: 없으면 생성, 유효성 검사 실행
+      updateFields, // null이 아닌 값만 업데이트
+      { new: true, upsert: true, runValidators: true }
     );
 
     // subNames에 포함된 이름과 동일한 player 데이터를 삭제
