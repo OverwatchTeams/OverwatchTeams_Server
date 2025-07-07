@@ -19,11 +19,19 @@ const winRateRoleSchema = new mongoose.Schema({
 // 맵별 구조 (맵 이름이 key)
 const winRateMapSchema = new mongoose.Schema({}, { _id: false, strict: false });
 
+// 역할+맵별 구조 (역할별로 맵 데이터를 저장)
+const winRateRoleMapSchema = new mongoose.Schema({
+  D: { type: winRateMapSchema, default: () => ({}) },
+  T: { type: winRateMapSchema, default: () => ({}) },
+  H: { type: winRateMapSchema, default: () => ({}) }
+}, { _id: false });
+
 // 연/월별 구조
 const winRateByPeriodSchema = new mongoose.Schema({
   total: { type: winRateDetailSchema, default: () => ({}) },
   map: { type: winRateMapSchema, default: () => ({}) },
-  role: { type: winRateRoleSchema, default: () => ({}) }
+  role: { type: winRateRoleSchema, default: () => ({}) },
+  roleMap: { type: winRateRoleMapSchema, default: () => ({}) },
 }, { _id: false });
 
 const synergyDetailSchema = new mongoose.Schema({
@@ -52,6 +60,7 @@ const synergySchema = new mongoose.Schema({
 const playerSchema = new mongoose.Schema({
   player: { type: String, required: true, unique: true },
   isClanMember: { type: Boolean, default: true },
+  isVoiceAvailable: { type: Boolean, default: false },
   dates: {
     first: { type: Date, default: null },
     last: { type: Date, default: null },
