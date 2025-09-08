@@ -1,25 +1,23 @@
 const connectToDatabase = require('./db');
 const Main = require('./models/Main');
+const { HTTP_STATUS, ERROR_CODES, SUCCESS_CODES,createSuccessResponse,createErrorResponse } = require('./utils/responseHelper');
 
 exports.handler = async (event) => {
-  await connectToDatabase();
+    try {
+      await connectToDatabase();
+    } catch (err) {
+      return createErrorResponse('데이터베이스 연결에 실패했습니다.', ERROR_CODES.DATABASE_CONNECTION_ERROR, HTTP_STATUS.SERVICE_UNAVAILABLE);
+    }
 
   try {
     const category = event.queryStringParameters?.category;
     const date = event.queryStringParameters?.date;
-
     if (!date) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'date parameter is required' }),
-      };
+      return createErrorResponse('날짜를 입력하여야 합니다.', ERROR_CODES.MISSING_REQUIRED_FIELD, HTTP_STATUS.BAD_REQUEST);
     }
 
     if (!category) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'Category parameter is required' }),
-      };
+      return createErrorResponse('카테고리를 입력하여야 합니다.', ERROR_CODES.MISSING_REQUIRED_FIELD, HTTP_STATUS.BAD_REQUEST);
     }
 
     // category 값에 따라 leaderBoard 속성 결정
@@ -31,10 +29,7 @@ exports.handler = async (event) => {
     } else if (category === 'day') {
       leaderBoardPath = 'leaderBoard.byDay';
     } else {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'Invalid category. Must be year, month, or day' }),
-      };
+      return createErrorResponse('정확한 카테고리를 입력해야합니다.(year, month, day)', ERROR_CODES.MISSING_REQUIRED_FIELD, HTTP_STATUS.BAD_REQUEST);
     }
 
     const result = await Main.findOne(
@@ -43,10 +38,7 @@ exports.handler = async (event) => {
     );
 
     if (!result || !result.leaderBoard) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: `No data found for ${category} ${date}` }),
-      };
+      return createErrorResponse('리더보드 데이터가 존재하지 않습니다.', ERROR_CODES.DATA_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     // category에 따라 적절한 leaderBoard 데이터 선택
@@ -59,13 +51,6 @@ exports.handler = async (event) => {
       leaderBoardData = result.leaderBoard.byDay;
     }
 
-    if (!leaderBoardData) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: `No ${category} data found` }),
-      };
-    }
-
     // Map 타입 처리
     const dateData =
       leaderBoardData instanceof Map
@@ -73,21 +58,14 @@ exports.handler = async (event) => {
         : leaderBoardData[date];
 
     if (!dateData) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: `No data found for ${category} ${date}` }),
-      };
+      return createErrorResponse(`${category} ${date}인 게임 데이터가 존재하지 않습니다.`, ERROR_CODES.DATA_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(dateData),
-    };
+    return createSuccessResponse('리더보드 데이터 조회를 성공하였습니다.', dateData, SUCCESS_CODES.DATA_RETRIEVED, HTTP_STATUS.OK);
   } catch (err) {
-    console.error('Error:', err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Failed to get LeaderBoard', error: err.message }),
-    };
+    if (err.name === 'ValidationError') {
+      return createErrorResponse('유효하지 않은 데이터입니다.', ERROR_CODES.VALIDATION_ERROR, HTTP_STATUS.BAD_REQUEST);
+    }
+    return createErrorResponse('서버 내부에 예상치 못한 오류가 발생했습니다.', ERROR_CODES.DATABASE_OPERATION_ERROR, HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 };

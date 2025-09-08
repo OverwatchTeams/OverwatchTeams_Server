@@ -1,35 +1,28 @@
 const connectToDatabase = require('./db');
 const MapType = require('./models/MapType');
+const { HTTP_STATUS, ERROR_CODES, SUCCESS_CODES,createSuccessResponse,createErrorResponse } = require('./utils/responseHelper');
 
 exports.handler = async (event) => {
-  await connectToDatabase();
+    try {
+      await connectToDatabase();
+    } catch (err) {
+        return createErrorResponse('데이터베이스 연결에 실패했습니다.', ERROR_CODES.DATABASE_CONNECTION_ERROR, HTTP_STATUS.SERVICE_UNAVAILABLE);
+    }
 
   // API Gateway에서 id는 pathParameters로 전달됨
-  const { id } = event.queryStringParameters || {};
+  const { Name } = event.queryStringParameters || {};
 
-  if (!id) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: 'id 파라미터가 필요합니다.' }),
-    };
+  if (!Name) {
+    return createErrorResponse('Name 파라미터가 필요합니다.', ERROR_CODES.MISSING_REQUIRED_FIELD, HTTP_STATUS.BAD_REQUEST);
   }
 
   try {
-    const deleted = await MapType.findByIdAndDelete(id);
+    const deleted = await MapType.findOneAndDelete({ name: Name });
     if (!deleted) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: 'MapType not found' }),
-      };
+      return createErrorResponse('맵타입을 찾을 수 없습니다.', ERROR_CODES.DATA_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'MapType deleted successfully' }),
-    };
+    return createSuccessResponse('맵타입을 삭제하였습니다.', deleted.name, SUCCESS_CODES.DATA_DELETED, HTTP_STATUS.OK);
   } catch (err) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Failed to delete MapType', error: err.message }),
-    };
+    return createErrorResponse('서버 내부에 예상치 못한 오류가 발생했습니다.', ERROR_CODES.DATA_UPDATE_FAILED, HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 };

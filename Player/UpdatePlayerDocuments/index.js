@@ -4,9 +4,15 @@ const Match = require('./models/Match');
 const Player = require('./models/Player');
 const { aggregateWinRate } = require('./utils/winRateUtils');
 const { aggregateSynergy } = require('./utils/synergyUtils');
+const { HTTP_STATUS, ERROR_CODES, SUCCESS_CODES,createSuccessResponse,createErrorResponse } = require('./utils/responseHelper');
+
 
 exports.handler = async (event) => {
-  await connectToDatabase();
+  try {
+    await connectToDatabase();
+  } catch (err) {
+    return createErrorResponse('데이터베이스 연결에 실패했습니다.', ERROR_CODES.DATABASE_CONNECTION_ERROR, HTTP_STATUS.SERVICE_UNAVAILABLE);
+  }
   try {
     // 1 각 player별로 첫/마지막 참가 날짜 조회
     const players = await Match.aggregate([
@@ -77,17 +83,14 @@ exports.handler = async (event) => {
     await aggregateWinRate(Match, Player);
     await aggregateSynergy(Match, Player);
 
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'All player data updated successfully.' }),
-    };
+    return createSuccessResponse('모든 플레이어 데이터 업데이트 성공.', true, SUCCESS_CODES.DATA_UPDATED, HTTP_STATUS.OK);
 
   } catch (error) {
-    console.error('Update failed:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Error updating player data.', error }),
-    };
+    //유효성 에러
+    if (err.name === 'ValidationError') {
+      return createErrorResponse('유효하지 않은 데이터입니다.', ERROR_CODES.VALIDATION_ERROR, HTTP_STATUS.BAD_REQUEST);
+    }
+    
+    return createErrorResponse('서버 내부에 예상치 못한 오류가 발생했습니다.', ERROR_CODES.DATA_UPDATE_FAILED, HTTP_STATUS.INTERNAL_SERVER_ERROR);
   }
 };
